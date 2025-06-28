@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import Button from './Button';
 
-/**
- * Custom hook for managing tasks with localStorage persistence
- */
+interface Task {
+  id: number;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 const useLocalStorageTasks = () => {
-  // Initialize state from localStorage or with empty array
-  const [tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem('tasks');
-    return savedTasks ? JSON.parse(savedTasks) : [];
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('tasks');
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // Update localStorage when tasks change
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  // Add a new task
-  const addTask = (text) => {
+  const addTask = (text: string) => {
     if (text.trim()) {
       setTasks([
         ...tasks,
@@ -31,67 +32,50 @@ const useLocalStorageTasks = () => {
     }
   };
 
-  // Toggle task completion status
-  const toggleTask = (id) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const toggleTask = (id: number) => {
+    setTasks(tasks.map(task =>
+      task.id === id ? { ...task, completed: !task.completed } : task
+    ));
   };
 
-  // Delete a task
-  const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const deleteTask = (id: number) => {
+    setTasks(tasks.filter(task => task.id !== id));
   };
 
   return { tasks, addTask, toggleTask, deleteTask };
 };
 
-/**
- * TaskManager component for managing tasks
- */
-const TaskManager = () => {
+const TaskManager: React.FC = () => {
   const { tasks, addTask, toggleTask, deleteTask } = useLocalStorageTasks();
   const [newTaskText, setNewTaskText] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-  // Filter tasks based on selected filter
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = tasks.filter(task => {
     if (filter === 'active') return !task.completed;
     if (filter === 'completed') return task.completed;
-    return true; // 'all' filter
+    return true;
   });
 
-  // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addTask(newTaskText);
     setNewTaskText('');
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Task Manager</h2>
-
-      {/* Task input form */}
-      <form onSubmit={handleSubmit} className="mb-6">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTaskText}
-            onChange={(e) => setNewTaskText(e.target.value)}
-            placeholder="Add a new task..."
-            className="flex-grow px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-          />
-          <Button type="submit" variant="primary">
-            Add Task
-          </Button>
-        </div>
+    <section className="max-w-2xl mx-auto py-8 px-4">
+      <h2 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6 text-center">Task Manager</h2>
+      <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={newTaskText}
+          onChange={e => setNewTaskText(e.target.value)}
+          placeholder="Add a new task..."
+          className="flex-grow px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+        />
+        <Button type="submit" variant="primary">Add</Button>
       </form>
-
-      {/* Filter buttons */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 justify-center">
         <Button
           variant={filter === 'all' ? 'primary' : 'secondary'}
           size="sm"
@@ -114,18 +98,16 @@ const TaskManager = () => {
           Completed
         </Button>
       </div>
-
-      {/* Task list */}
       <ul className="space-y-2">
         {filteredTasks.length === 0 ? (
           <li className="text-gray-500 dark:text-gray-400 text-center py-4">
             No tasks found
           </li>
         ) : (
-          filteredTasks.map((task) => (
+          filteredTasks.map(task => (
             <li
               key={task.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-700"
+              className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 dark:border-gray-700 shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <input
@@ -134,11 +116,7 @@ const TaskManager = () => {
                   onChange={() => toggleTask(task.id)}
                   className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span
-                  className={`${
-                    task.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''
-                  }`}
-                >
+                <span className={task.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''}>
                   {task.text}
                 </span>
               </div>
@@ -154,14 +132,10 @@ const TaskManager = () => {
           ))
         )}
       </ul>
-
-      {/* Task stats */}
-      <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-        <p>
-          {tasks.filter((task) => !task.completed).length} tasks remaining
-        </p>
+      <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p>{tasks.filter(task => !task.completed).length} tasks remaining</p>
       </div>
-    </div>
+    </section>
   );
 };
 
